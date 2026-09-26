@@ -18,13 +18,11 @@ export function getApiBaseUrl(): string {
   if (import.meta.env.DEV) {
     return '/api/v1';
   }
-  return '';
+  return 'https://stamas-hd76.onrender.com/api/v1';
 }
 
 export function isBackendConfigured(): boolean {
-  if (import.meta.env.DEV) return true;
-  const envBase = import.meta.env.VITE_API_BASE_URL;
-  return Boolean(envBase && typeof envBase === 'string' && envBase.trim() !== '');
+  return Boolean(getApiBaseUrl());
 }
 
 /**
