@@ -12,6 +12,12 @@ STAMAS is an end-to-end, AI-assisted compliance verification platform designed f
 ### Core Operating Principle
 > **AI assists. Rules verify. Humans decide.**
 
+### Live Production Deployment
+- **Frontend Web UI (GitHub Pages):** [https://tamizh1309.github.io/STAMAS/](https://tamizh1309.github.io/STAMAS/)
+- **Backend API Engine (FastAPI):** `https://twelve-badgers-punch.loca.lt/api/v1`
+- **Swagger Interactive API Docs:** `https://twelve-badgers-punch.loca.lt/docs`
+- **AI Intelligence Provider:** Groq Cloud LLM (`openai/gpt-oss-120b`) with server-side key management and deterministic fallbacks.
+
 ---
 
 ## Architecture Diagram
@@ -19,14 +25,22 @@ STAMAS is an end-to-end, AI-assisted compliance verification platform designed f
 ```
                  ┌───────────────────────────────────────┐
                  │       STAMAS Web UI Platform          │
-                 │     React + TypeScript + Tailwind     │
+                 │   React + Vite + TypeScript + Tailwind│
+                 │   https://tamizh1309.github.io/STAMAS/│
                  └──────────────────┬────────────────────┘
-                                    │ HTTP / REST
+                                    │ HTTPS / REST (VITE_API_BASE_URL)
                                     ▼
                  ┌───────────────────────────────────────┐
                  │       FastAPI Backend Engine          │
                  │      Python 3.11 + SQLAlchemy         │
-                 └──────────────────┬────────────────────┘
+                 │  https://twelve-badgers-punch.loca.lt │
+                 └──────────┬─────────────────┬──────────┘
+                            │                 │ Server-side API
+                            ▼                 ▼
+                 ┌──────────────────┐ ┌──────────────────┐
+                 │ Document Parser  │ │ Groq Cloud LLM   │
+                 │ PyMuPDF + Rules  │ │ openai/gpt-oss   │
+                 └──────────────────┘ └──────────────────┘
                                     │
     ┌───────────────────────────────┼───────────────────────────────┐
     ▼                               ▼                               ▼

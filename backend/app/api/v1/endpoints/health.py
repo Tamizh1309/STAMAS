@@ -28,7 +28,12 @@ def check_health(db: Session = Depends(get_db)):
         "components": {
             "database": db_status,
             "pdf_parser": f"PyMuPDF v{pymupdf.__version__}",
-            "ai_provider": settings.AI_PROVIDER
+            "ai_provider": settings.AI_PROVIDER,
+            "ai_configured": bool(
+                settings.GROQ_API_KEY if settings.AI_PROVIDER.upper() == "GROQ" else
+                settings.GEMINI_API_KEY if settings.AI_PROVIDER.upper() == "GEMINI" else
+                settings.OPENAI_API_KEY if settings.AI_PROVIDER.upper() == "OPENAI" else False
+            )
         }
     }
 

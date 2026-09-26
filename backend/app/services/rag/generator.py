@@ -106,6 +106,46 @@ def detect_conflicts_and_missing(
     return conflicts, missing_info
 
 
+def call_groq_api(prompt: str, api_key: str, model: str = "openai/gpt-oss-120b") -> Optional[str]:
+    """
+    Calls Groq Cloud API using standard urllib.
+    """
+    if not api_key:
+        return None
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    payload = {
+        "model": model or "openai/gpt-oss-120b",
+        "messages": [
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.1
+    }
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=data,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+            "User-Agent": "STAMAS-Platform/1.0"
+        },
+        method="POST"
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            if resp.status == 200:
+                res_body = resp.read().decode("utf-8")
+                res_data = json.loads(res_body)
+                choices = res_data.get("choices", [])
+                if choices:
+                    msg_content = choices[0].get("message", {}).get("content", "")
+                    return msg_content
+    except Exception as e:
+        print(f"Groq API Error: {e}")
+        pass
+    return None
+
+
 def call_gemini_api(prompt: str, api_key: str) -> Optional[str]:
     """
     Calls Google Gemini REST API directly using Python's standard urllib.
@@ -164,7 +204,12 @@ def generate_grounded_response(
     # Check AI Provider configuration
     provider = settings.AI_PROVIDER.upper()
 
-    if provider == "NONE" or (provider == "GEMINI" and not settings.GEMINI_API_KEY) or (provider == "OPENAI" and not settings.OPENAI_API_KEY):
+    if (
+        provider == "NONE"
+        or (provider == "GROQ" and not settings.GROQ_API_KEY)
+        or (provider == "GEMINI" and not settings.GEMINI_API_KEY)
+        or (provider == "OPENAI" and not settings.OPENAI_API_KEY)
+    ):
         # Fallback mode: Summarize retrieved evidence deterministically
         fallback_lines = ["AI LLM provider is unavailable or not configured. Summary of retrieved evidence:"]
         for s in source_mapping:
@@ -197,7 +242,9 @@ CRITICAL RULES:
     full_prompt = f"{system_instruction}\n\n{formatted_context}\n\nUSER QUESTION / TASK:\n{query}\n\nPROVIDE A GROUNDED CITED ANSWER:"
 
     raw_response = None
-    if provider == "GEMINI" and settings.GEMINI_API_KEY:
+    if provider == "GROQ" and settings.GROQ_API_KEY:
+        raw_response = call_groq_api(full_prompt, settings.GROQ_API_KEY, settings.GROQ_MODEL)
+    elif provider == "GEMINI" and settings.GEMINI_API_KEY:
         raw_response = call_gemini_api(full_prompt, settings.GEMINI_API_KEY)
 
     if not raw_response or "INSUFFICIENT_CONTEXT" in raw_response:

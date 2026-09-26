@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 from typing import List
 
 class Settings(BaseSettings):
-    model_config = ConfigDict(case_sensitive=True)
+    model_config = ConfigDict(case_sensitive=True, env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     PROJECT_NAME: str = "STAMAS - Smart Tender Analysis & Management Assessment System"
     VERSION: str = "1.0.0"
@@ -32,9 +32,11 @@ class Settings(BaseSettings):
     ]
 
     # AI & RAG Configuration
-    AI_PROVIDER: str = os.getenv("AI_PROVIDER", "GEMINI") # GEMINI, OPENAI, LOCAL, NONE
+    AI_PROVIDER: str = os.getenv("AI_PROVIDER", "GROQ") # GROQ, GEMINI, OPENAI, LOCAL, NONE
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
     EMBEDDING_PROVIDER: str = os.getenv("EMBEDDING_PROVIDER", "KEYWORD") # GEMINI, OPENAI, LOCAL, KEYWORD
 
 
