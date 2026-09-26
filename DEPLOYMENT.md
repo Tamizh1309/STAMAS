@@ -128,3 +128,31 @@ tar -xzvf storage/backups/storage_backup_TARGET.tar.gz -C ./
 STAMAS provides production readiness endpoints:
 - `GET /api/v1/health`: Checks database connectivity, PyMuPDF engine, version, and AI provider status.
 - `GET /api/v1/health/ready`: Verifies database connection and write permissions across storage directories.
+
+---
+
+## 7. GitHub Pages Static Frontend Deployment & Backend Integration
+
+### Architecture Overview
+```
+GitHub Pages (https://tamizh1309.github.io/STAMAS/)
+      │
+      ▼
+React/Vite Frontend (Static Bundle)
+      │
+      ▼ (Configured via VITE_API_BASE_URL)
+FastAPI Backend Engine (Local or Cloud Hosted)
+      │
+      ▼
+SQLite Database / PyMuPDF Engine / Grounded RAG
+```
+
+- **Frontend Hosting:** Deployed to GitHub Pages at `https://tamizh1309.github.io/STAMAS/`
+- **Backend Hosting:** FastAPI backend can be run locally (`http://localhost:8000/api/v1`) or deployed to an external cloud host.
+- **Backend API URL Configuration:** Supplied at build time via `VITE_API_BASE_URL`:
+  ```bash
+  # Building for production with external backend:
+  VITE_API_BASE_URL=https://YOUR-BACKEND-DOMAIN/api/v1 npm run build
+  ```
+- **Unconfigured Deployment Handling:** If `VITE_API_BASE_URL` is omitted during a GitHub Pages build, the frontend cleanly displays an honest status banner ("Backend API Not Configured") and system state indicator ("Configuration Required") rather than failing with 404 relative requests.
+

@@ -38,6 +38,8 @@ jobs:
           npm ci
 
       - name: Build Production Frontend
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
         run: |
           cd frontend
           npm run build

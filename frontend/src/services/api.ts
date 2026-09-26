@@ -1,14 +1,55 @@
 import type { Tender, TenderDetail, TenderPage, SystemHealth, PDFProcessingResult, Requirement, ExtractionSummary, Bidder, BidderDocument, EvidenceMatch, EvidenceSummary, ComplianceRule, RuleEvaluation, RuleEvaluationSummary, RAGQueryRequest, RAGQueryResponse, RequirementRAGAnalysisResponse, DocumentIndexResponse, RequirementDecisionSummary, ComplianceDecisionResponse, OfficerReviewAuditOut, BidderReviewSummaryResponse, TenderComplianceReportResponse, BidderComplianceReportResponse, AuditPaginatedResponse, BenchmarkEvaluationResponse } from '../types';
 
+export class ApiConfigurationError extends Error {
+  constructor(message?: string) {
+    super(
+      message ||
+        'Backend API is not configured for this production deployment. Configure VITE_API_BASE_URL to connect STAMAS to the FastAPI backend.'
+    );
+    this.name = 'ApiConfigurationError';
+  }
+}
+
+export function getApiBaseUrl(): string {
+  const envBase = import.meta.env.VITE_API_BASE_URL;
+  if (envBase && typeof envBase === 'string' && envBase.trim() !== '') {
+    return envBase.trim().replace(/\/+$/, '');
+  }
+  if (import.meta.env.DEV) {
+    return '/api/v1';
+  }
+  return '';
+}
+
+export function isBackendConfigured(): boolean {
+  if (import.meta.env.DEV) return true;
+  const envBase = import.meta.env.VITE_API_BASE_URL;
+  return Boolean(envBase && typeof envBase === 'string' && envBase.trim() !== '');
+}
+
+/**
+ * Safely constructs a full API endpoint URL avoiding double slashes or missing slashes.
+ */
+export function buildUrl(endpoint: string): string {
+  const base = getApiBaseUrl();
+  if (!base) {
+    throw new ApiConfigurationError();
+  }
+  const cleanBase = base.replace(/\/+$/, '');
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return `${cleanBase}${cleanEndpoint}`;
+}
+
+
 /* Phase 10: Reports & Compliance Audit APIs */
 export async function fetchTenderReport(tenderId: number): Promise<TenderComplianceReportResponse> {
-  const res = await fetch(`${API_BASE}/reports/tenders/${tenderId}`);
+  const res = await fetch(buildUrl(`/reports/tenders/${tenderId}`));
   if (!res.ok) throw new Error('Failed to fetch tender compliance report');
   return res.json();
 }
 
 export async function downloadTenderPdf(tenderId: number): Promise<void> {
-  const res = await fetch(`${API_BASE}/reports/tenders/${tenderId}/pdf`);
+  const res = await fetch(buildUrl(`/reports/tenders/${tenderId}/pdf`));
   if (!res.ok) throw new Error('Failed to download tender PDF report');
   const blob = await res.blob();
   const url = window.URL.createObjectURL(blob);
@@ -22,7 +63,7 @@ export async function downloadTenderPdf(tenderId: number): Promise<void> {
 }
 
 export async function downloadTenderCsv(tenderId: number): Promise<void> {
-  const res = await fetch(`${API_BASE}/reports/tenders/${tenderId}/csv`);
+  const res = await fetch(buildUrl(`/reports/tenders/${tenderId}/csv`));
   if (!res.ok) throw new Error('Failed to download tender CSV report');
   const blob = await res.blob();
   const url = window.URL.createObjectURL(blob);
@@ -36,13 +77,13 @@ export async function downloadTenderCsv(tenderId: number): Promise<void> {
 }
 
 export async function fetchBidderReport(tenderId: number, bidderId: number): Promise<BidderComplianceReportResponse> {
-  const res = await fetch(`${API_BASE}/reports/bidders/${bidderId}?tender_id=${tenderId}`);
+  const res = await fetch(buildUrl(`/reports/bidders/${bidderId}?tender_id=${tenderId}`));
   if (!res.ok) throw new Error('Failed to fetch bidder compliance report');
   return res.json();
 }
 
 export async function downloadBidderPdf(tenderId: number, bidderId: number): Promise<void> {
-  const res = await fetch(`${API_BASE}/reports/bidders/${bidderId}/pdf?tender_id=${tenderId}`);
+  const res = await fetch(buildUrl(`/reports/bidders/${bidderId}/pdf?tender_id=${tenderId}`));
   if (!res.ok) throw new Error('Failed to download bidder PDF report');
   const blob = await res.blob();
   const url = window.URL.createObjectURL(blob);
@@ -56,7 +97,7 @@ export async function downloadBidderPdf(tenderId: number, bidderId: number): Pro
 }
 
 export async function downloadBidderCsv(tenderId: number, bidderId: number): Promise<void> {
-  const res = await fetch(`${API_BASE}/reports/bidders/${bidderId}/csv?tender_id=${tenderId}`);
+  const res = await fetch(buildUrl(`/reports/bidders/${bidderId}/csv?tender_id=${tenderId}`));
   if (!res.ok) throw new Error('Failed to download bidder CSV report');
   const blob = await res.blob();
   const url = window.URL.createObjectURL(blob);
@@ -77,7 +118,7 @@ export async function fetchAuditReportData(
   page: number = 1,
   pageSize: number = 20
 ): Promise<AuditPaginatedResponse> {
-  let url = `${API_BASE}/reports/audit?page=${page}&page_size=${pageSize}`;
+  let url = buildUrl(`/reports/audit?page=${page}&page_size=${pageSize}`);
   if (tenderId) url += `&tender_id=${tenderId}`;
   if (bidderId) url += `&bidder_id=${bidderId}`;
   if (actionFilter && actionFilter !== 'ALL') url += `&action_filter=${encodeURIComponent(actionFilter)}`;
@@ -94,7 +135,7 @@ export async function downloadAuditCsv(
   actionFilter?: string,
   search?: string
 ): Promise<void> {
-  let url = `${API_BASE}/reports/audit/csv?`;
+  let url = buildUrl(`/reports/audit/csv?`);
   if (tenderId) url += `&tender_id=${tenderId}`;
   if (bidderId) url += `&bidder_id=${bidderId}`;
   if (actionFilter && actionFilter !== 'ALL') url += `&action_filter=${encodeURIComponent(actionFilter)}`;
@@ -118,7 +159,7 @@ export async function fetchBidderReviewSummary(
   tenderId: number,
   bidderId: number
 ): Promise<BidderReviewSummaryResponse> {
-  const res = await fetch(`${API_BASE}/compliance/review/bidders/${bidderId}?tender_id=${tenderId}`);
+  const res = await fetch(buildUrl(`/compliance/review/bidders/${bidderId}?tender_id=${tenderId}`));
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || 'Failed to fetch bidder review summary');
@@ -132,7 +173,7 @@ export async function confirmRequirementDecision(
   requirementId: number,
   officerComment?: string
 ): Promise<any> {
-  const res = await fetch(`${API_BASE}/compliance/review/bidders/${bidderId}/requirements/${requirementId}/confirm?tender_id=${tenderId}`, {
+  const res = await fetch(buildUrl(`/compliance/review/bidders/${bidderId}/requirements/${requirementId}/confirm?tender_id=${tenderId}`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ officer_comment: officerComment }),
@@ -152,7 +193,7 @@ export async function overrideRequirementDecision(
   overrideReason: string,
   officerComment?: string
 ): Promise<any> {
-  const res = await fetch(`${API_BASE}/compliance/review/bidders/${bidderId}/requirements/${requirementId}/override?tender_id=${tenderId}`, {
+  const res = await fetch(buildUrl(`/compliance/review/bidders/${bidderId}/requirements/${requirementId}/override?tender_id=${tenderId}`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -172,7 +213,7 @@ export async function finalizeBidderReview(
   tenderId: number,
   bidderId: number
 ): Promise<BidderReviewSummaryResponse> {
-  const res = await fetch(`${API_BASE}/compliance/review/bidders/${bidderId}/finalize?tender_id=${tenderId}`, {
+  const res = await fetch(buildUrl(`/compliance/review/bidders/${bidderId}/finalize?tender_id=${tenderId}`), {
     method: 'POST',
   });
   if (!res.ok) {
@@ -187,7 +228,7 @@ export async function reopenBidderReview(
   bidderId: number,
   reason: string
 ): Promise<BidderReviewSummaryResponse> {
-  const res = await fetch(`${API_BASE}/compliance/review/bidders/${bidderId}/reopen?tender_id=${tenderId}&reason=${encodeURIComponent(reason)}`, {
+  const res = await fetch(buildUrl(`/compliance/review/bidders/${bidderId}/reopen?tender_id=${tenderId}&reason=${encodeURIComponent(reason)}`), {
     method: 'POST',
   });
   if (!res.ok) {
@@ -202,7 +243,7 @@ export async function fetchDecisionAuditTrail(
   bidderId: number,
   requirementId?: number
 ): Promise<OfficerReviewAuditOut[]> {
-  let url = `${API_BASE}/compliance/review/bidders/${bidderId}/audit?tender_id=${tenderId}`;
+  let url = buildUrl(`/compliance/review/bidders/${bidderId}/audit?tender_id=${tenderId}`);
   if (requirementId) {
     url += `&requirement_id=${requirementId}`;
   }
@@ -216,7 +257,7 @@ export async function evaluateComplianceDecisions(
   tenderId: number,
   bidderId: number
 ): Promise<ComplianceDecisionResponse> {
-  const res = await fetch(`${API_BASE}/compliance/decisions/evaluate`, {
+  const res = await fetch(buildUrl(`/compliance/decisions/evaluate`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tender_id: tenderId, bidder_id: bidderId }),
@@ -232,7 +273,7 @@ export async function fetchBidderComplianceSummary(
   bidderId: number,
   tenderId: number
 ): Promise<ComplianceDecisionResponse> {
-  const res = await fetch(`${API_BASE}/compliance/bidders/${bidderId}/compliance-summary?tender_id=${tenderId}`);
+  const res = await fetch(buildUrl(`/compliance/bidders/${bidderId}/compliance-summary?tender_id=${tenderId}`));
   if (!res.ok) throw new Error('Failed to fetch bidder compliance summary');
   return res.json();
 }
@@ -241,13 +282,13 @@ export async function fetchRequirementDecision(
   bidderId: number,
   requirementId: number
 ): Promise<RequirementDecisionSummary> {
-  const res = await fetch(`${API_BASE}/compliance/bidders/${bidderId}/requirements/${requirementId}/decision`);
+  const res = await fetch(buildUrl(`/compliance/bidders/${bidderId}/requirements/${requirementId}/decision`));
   if (!res.ok) throw new Error('Failed to fetch requirement decision');
   return res.json();
 }
 
 export async function reevaluateDecision(decisionId: number): Promise<ComplianceDecisionResponse> {
-  const res = await fetch(`${API_BASE}/compliance/decisions/${decisionId}/re-evaluate`, {
+  const res = await fetch(buildUrl(`/compliance/decisions/${decisionId}/re-evaluate`), {
     method: 'POST',
   });
   if (!res.ok) throw new Error('Failed to re-evaluate decision');
@@ -256,7 +297,7 @@ export async function reevaluateDecision(decisionId: number): Promise<Compliance
 
 /* Phase 7: AI + RAG Intelligence APIs */
 export async function queryRAG(reqData: RAGQueryRequest): Promise<RAGQueryResponse> {
-  const res = await fetch(`${API_BASE}/rag/query`, {
+  const res = await fetch(buildUrl(`/rag/query`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(reqData),
@@ -272,7 +313,7 @@ export async function analyzeRequirementRAG(
   requirementId: number,
   bidderId: number
 ): Promise<RequirementRAGAnalysisResponse> {
-  const res = await fetch(`${API_BASE}/rag/requirements/${requirementId}/analyze`, {
+  const res = await fetch(buildUrl(`/rag/requirements/${requirementId}/analyze`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ bidder_id: bidderId }),
@@ -285,7 +326,7 @@ export async function analyzeRequirementRAG(
 }
 
 export async function indexDocumentRAG(documentId: number): Promise<DocumentIndexResponse> {
-  const res = await fetch(`${API_BASE}/rag/documents/${documentId}/index`, {
+  const res = await fetch(buildUrl(`/rag/documents/${documentId}/index`), {
     method: 'POST',
   });
   if (!res.ok) {
@@ -297,23 +338,22 @@ export async function indexDocumentRAG(documentId: number): Promise<DocumentInde
 
 
 
-const API_BASE = '/api/v1';
 
 export async function fetchHealth(): Promise<SystemHealth> {
-  const res = await fetch(`${API_BASE}/health`);
+  const res = await fetch(buildUrl(`/health`));
   if (!res.ok) throw new Error('Health check failed');
   return res.json();
 }
 
 export async function fetchTenders(search?: string): Promise<Tender[]> {
-  const url = search ? `${API_BASE}/tenders/?search=${encodeURIComponent(search)}` : `${API_BASE}/tenders/`;
+  const url = search ? buildUrl(`/tenders/?search=${encodeURIComponent(search)}`) : buildUrl(`/tenders/`);
   const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to fetch tenders');
   return res.json();
 }
 
 export async function fetchTenderDetail(id: number): Promise<TenderDetail> {
-  const res = await fetch(`${API_BASE}/tenders/${id}`);
+  const res = await fetch(buildUrl(`/tenders/${id}`));
   if (!res.ok) throw new Error('Failed to fetch tender details');
   return res.json();
 }
@@ -325,7 +365,7 @@ export async function createTender(data: {
   issue_date?: string;
   closing_date?: string;
 }): Promise<Tender> {
-  const res = await fetch(`${API_BASE}/tenders/`, {
+  const res = await fetch(buildUrl(`/tenders/`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -341,7 +381,7 @@ export async function uploadTenderPDF(id: number, file: File): Promise<PDFProces
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await fetch(`${API_BASE}/tenders/${id}/upload-pdf`, {
+  const res = await fetch(buildUrl(`/tenders/${id}/upload-pdf`), {
     method: 'POST',
     body: formData,
   });
@@ -355,8 +395,8 @@ export async function uploadTenderPDF(id: number, file: File): Promise<PDFProces
 
 export async function searchExtractedText(id: number, query?: string): Promise<TenderPage[]> {
   const url = query 
-    ? `${API_BASE}/tenders/${id}/extracted-text?query=${encodeURIComponent(query)}`
-    : `${API_BASE}/tenders/${id}/extracted-text`;
+    ? buildUrl(`/tenders/${id}/extracted-text?query=${encodeURIComponent(query)}`)
+    : buildUrl(`/tenders/${id}/extracted-text`);
   const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to search extracted text');
   return res.json();
@@ -365,7 +405,7 @@ export async function searchExtractedText(id: number, query?: string): Promise<T
 /* Phase 2: Requirement Intelligence APIs */
 
 export async function extractRequirements(tenderId: number): Promise<ExtractionSummary> {
-  const res = await fetch(`${API_BASE}/tenders/${tenderId}/extract-requirements`, {
+  const res = await fetch(buildUrl(`/tenders/${tenderId}/extract-requirements`), {
     method: 'POST',
   });
   if (!res.ok) {
@@ -377,15 +417,15 @@ export async function extractRequirements(tenderId: number): Promise<ExtractionS
 
 export async function fetchRequirements(tenderId: number, category?: string): Promise<Requirement[]> {
   const url = category && category !== 'ALL'
-    ? `${API_BASE}/tenders/${tenderId}/requirements?category=${encodeURIComponent(category)}`
-    : `${API_BASE}/tenders/${tenderId}/requirements`;
+    ? buildUrl(`/tenders/${tenderId}/requirements?category=${encodeURIComponent(category)}`)
+    : buildUrl(`/tenders/${tenderId}/requirements`);
   const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to fetch requirements');
   return res.json();
 }
 
 export async function createManualRequirement(tenderId: number, data: Partial<Requirement>): Promise<Requirement> {
-  const res = await fetch(`${API_BASE}/tenders/${tenderId}/requirements`, {
+  const res = await fetch(buildUrl(`/tenders/${tenderId}/requirements`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -398,7 +438,7 @@ export async function createManualRequirement(tenderId: number, data: Partial<Re
 }
 
 export async function updateRequirement(reqId: number, data: Partial<Requirement>): Promise<Requirement> {
-  const res = await fetch(`${API_BASE}/requirements/${reqId}`, {
+  const res = await fetch(buildUrl(`/requirements/${reqId}`), {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -411,7 +451,7 @@ export async function updateRequirement(reqId: number, data: Partial<Requirement
 }
 
 export async function deleteRequirement(reqId: number): Promise<void> {
-  const res = await fetch(`${API_BASE}/requirements/${reqId}`, {
+  const res = await fetch(buildUrl(`/requirements/${reqId}`), {
     method: 'DELETE',
   });
   if (!res.ok) {
@@ -422,13 +462,13 @@ export async function deleteRequirement(reqId: number): Promise<void> {
 
 /* Phase 3: Bidder Management APIs */
 export async function fetchBidders(tenderId: number): Promise<Bidder[]> {
-  const res = await fetch(`${API_BASE}/tenders/${tenderId}/bidders`);
+  const res = await fetch(buildUrl(`/tenders/${tenderId}/bidders`));
   if (!res.ok) throw new Error('Failed to fetch bidders');
   return res.json();
 }
 
 export async function createBidder(tenderId: number, data: Partial<Bidder>): Promise<Bidder> {
-  const res = await fetch(`${API_BASE}/tenders/${tenderId}/bidders`, {
+  const res = await fetch(buildUrl(`/tenders/${tenderId}/bidders`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -441,13 +481,13 @@ export async function createBidder(tenderId: number, data: Partial<Bidder>): Pro
 }
 
 export async function fetchBidder(bidderId: number): Promise<Bidder> {
-  const res = await fetch(`${API_BASE}/bidders/${bidderId}`);
+  const res = await fetch(buildUrl(`/bidders/${bidderId}`));
   if (!res.ok) throw new Error('Failed to fetch bidder');
   return res.json();
 }
 
 export async function updateBidder(bidderId: number, data: Partial<Bidder>): Promise<Bidder> {
-  const res = await fetch(`${API_BASE}/bidders/${bidderId}`, {
+  const res = await fetch(buildUrl(`/bidders/${bidderId}`), {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -460,7 +500,7 @@ export async function updateBidder(bidderId: number, data: Partial<Bidder>): Pro
 }
 
 export async function deleteBidder(bidderId: number): Promise<void> {
-  const res = await fetch(`${API_BASE}/bidders/${bidderId}`, {
+  const res = await fetch(buildUrl(`/bidders/${bidderId}`), {
     method: 'DELETE',
   });
   if (!res.ok) {
@@ -470,7 +510,7 @@ export async function deleteBidder(bidderId: number): Promise<void> {
 }
 
 export async function fetchBidderDocuments(bidderId: number): Promise<BidderDocument[]> {
-  const res = await fetch(`${API_BASE}/bidders/${bidderId}/documents`);
+  const res = await fetch(buildUrl(`/bidders/${bidderId}/documents`));
   if (!res.ok) throw new Error('Failed to fetch bidder documents');
   return res.json();
 }
@@ -480,7 +520,7 @@ export async function uploadBidderDocument(bidderId: number, category: string, f
   formData.append('category', category);
   formData.append('file', file);
 
-  const res = await fetch(`${API_BASE}/bidders/${bidderId}/documents`, {
+  const res = await fetch(buildUrl(`/bidders/${bidderId}/documents`), {
     method: 'POST',
     body: formData,
   });
@@ -493,7 +533,7 @@ export async function uploadBidderDocument(bidderId: number, category: string, f
 }
 
 export async function processBidderDocument(bidderId: number, documentId: number): Promise<BidderDocument> {
-  const res = await fetch(`${API_BASE}/bidders/${bidderId}/documents/${documentId}/process`, {
+  const res = await fetch(buildUrl(`/bidders/${bidderId}/documents/${documentId}/process`), {
     method: 'POST',
   });
   
@@ -505,7 +545,7 @@ export async function processBidderDocument(bidderId: number, documentId: number
 }
 
 export async function deleteBidderDocument(bidderId: number, documentId: number): Promise<void> {
-  const res = await fetch(`${API_BASE}/bidders/${bidderId}/documents/${documentId}`, {
+  const res = await fetch(buildUrl(`/bidders/${bidderId}/documents/${documentId}`), {
     method: 'DELETE',
   });
   if (!res.ok) {
@@ -515,7 +555,7 @@ export async function deleteBidderDocument(bidderId: number, documentId: number)
 }
 
 export async function fetchBidderDocumentDetail(bidderId: number, documentId: number): Promise<BidderDocument> {
-  const res = await fetch(`${API_BASE}/bidders/${bidderId}/documents/${documentId}`);
+  const res = await fetch(buildUrl(`/bidders/${bidderId}/documents/${documentId}`));
   if (!res.ok) throw new Error('Failed to fetch document details');
   return res.json();
 }
@@ -528,7 +568,7 @@ export async function matchRequirement(
   requirementId: number
 ): Promise<EvidenceMatch[]> {
   const res = await fetch(
-    `${API_BASE}/tenders/${tenderId}/bidders/${bidderId}/requirements/${requirementId}/match`,
+    buildUrl(`/tenders/${tenderId}/bidders/${bidderId}/requirements/${requirementId}/match`),
     { method: 'POST' }
   );
   if (!res.ok) {
@@ -542,7 +582,7 @@ export async function runBatchEvidenceMatching(
   tenderId: number,
   bidderId: number
 ): Promise<EvidenceMatch[]> {
-  const res = await fetch(`${API_BASE}/evidence-matches/run`, {
+  const res = await fetch(buildUrl(`/evidence-matches/run`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tender_id: tenderId, bidder_id: bidderId }),
@@ -563,7 +603,7 @@ export async function fetchBidderEvidenceMatches(
   if (tenderId) params.append('tender_id', tenderId.toString());
   if (requirementId) params.append('requirement_id', requirementId.toString());
 
-  const url = `${API_BASE}/bidders/${bidderId}/evidence-matches?${params.toString()}`;
+  const url = buildUrl(`/bidders/${bidderId}/evidence-matches?${params.toString()}`);
   const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to fetch bidder evidence matches');
   return res.json();
@@ -573,7 +613,7 @@ export async function fetchRequirementEvidenceForBidder(
   bidderId: number,
   requirementId: number
 ): Promise<EvidenceMatch[]> {
-  const res = await fetch(`${API_BASE}/bidders/${bidderId}/requirements/${requirementId}/evidence`);
+  const res = await fetch(buildUrl(`/bidders/${bidderId}/requirements/${requirementId}/evidence`));
   if (!res.ok) throw new Error('Failed to fetch requirement evidence');
   return res.json();
 }
@@ -582,13 +622,13 @@ export async function fetchBidderEvidenceSummary(
   bidderId: number,
   tenderId: number
 ): Promise<EvidenceSummary> {
-  const res = await fetch(`${API_BASE}/bidders/${bidderId}/evidence-summary?tender_id=${tenderId}`);
+  const res = await fetch(buildUrl(`/bidders/${bidderId}/evidence-summary?tender_id=${tenderId}`));
   if (!res.ok) throw new Error('Failed to fetch evidence summary');
   return res.json();
 }
 
 export async function fetchEvidenceMatchDetail(matchId: number): Promise<EvidenceMatch> {
-  const res = await fetch(`${API_BASE}/evidence-matches/${matchId}`);
+  const res = await fetch(buildUrl(`/evidence-matches/${matchId}`));
   if (!res.ok) throw new Error('Failed to fetch evidence match details');
   return res.json();
 }
@@ -600,7 +640,7 @@ export async function evaluateComplianceRules(
   bidderId: number,
   requirementId?: number
 ): Promise<RuleEvaluation[]> {
-  const res = await fetch(`${API_BASE}/compliance/rules/evaluate`, {
+  const res = await fetch(buildUrl(`/compliance/rules/evaluate`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -625,7 +665,7 @@ export async function fetchBidderRuleEvaluations(
   if (tenderId) params.append('tender_id', tenderId.toString());
   if (resultFilter && resultFilter !== 'ALL') params.append('evaluation_result', resultFilter);
 
-  const url = `${API_BASE}/bidders/${bidderId}/rule-evaluations?${params.toString()}`;
+  const url = buildUrl(`/bidders/${bidderId}/rule-evaluations?${params.toString()}`);
   const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to fetch bidder rule evaluations');
   return res.json();
@@ -635,7 +675,7 @@ export async function fetchRequirementRuleEvaluations(
   bidderId: number,
   requirementId: number
 ): Promise<RuleEvaluation[]> {
-  const res = await fetch(`${API_BASE}/bidders/${bidderId}/requirements/${requirementId}/rule-evaluations`);
+  const res = await fetch(buildUrl(`/bidders/${bidderId}/requirements/${requirementId}/rule-evaluations`));
   if (!res.ok) throw new Error('Failed to fetch requirement rule evaluations');
   return res.json();
 }
@@ -644,7 +684,7 @@ export async function fetchBidderRuleSummary(
   bidderId: number,
   tenderId: number
 ): Promise<RuleEvaluationSummary> {
-  const res = await fetch(`${API_BASE}/bidders/${bidderId}/rule-summary?tender_id=${tenderId}`);
+  const res = await fetch(buildUrl(`/bidders/${bidderId}/rule-summary?tender_id=${tenderId}`));
   if (!res.ok) throw new Error('Failed to fetch rule summary');
   return res.json();
 }
@@ -653,7 +693,7 @@ export async function createCustomRule(
   requirementId: number,
   ruleData: Partial<ComplianceRule>
 ): Promise<ComplianceRule> {
-  const res = await fetch(`${API_BASE}/requirements/${requirementId}/rules`, {
+  const res = await fetch(buildUrl(`/requirements/${requirementId}/rules`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(ruleData),
@@ -667,7 +707,7 @@ export async function createCustomRule(
 
 /* Phase 11 API Helpers */
 export async function runBenchmarkEvaluation(): Promise<BenchmarkEvaluationResponse> {
-  const res = await fetch(`${API_BASE}/benchmark/run`);
+  const res = await fetch(buildUrl(`/benchmark/run`));
   if (!res.ok) throw new Error('Failed to execute benchmark evaluation');
   return res.json();
 }

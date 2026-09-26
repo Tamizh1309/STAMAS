@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ShieldCheck, Server, CheckCircle2, AlertCircle } from 'lucide-react';
-import { fetchHealth } from '../services/api';
+import { ShieldCheck, Server, CheckCircle2, AlertCircle, AlertTriangle } from 'lucide-react';
+import { fetchHealth, isBackendConfigured } from '../services/api';
 import type { SystemHealth } from '../types';
 
 interface HeaderProps {
@@ -10,11 +10,25 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
   const [health, setHealth] = useState<SystemHealth | null>(null);
+  const [statusState, setStatusState] = useState<'connecting' | 'online' | 'unconfigured' | 'unavailable'>(
+    !isBackendConfigured() ? 'unconfigured' : 'connecting'
+  );
 
   useEffect(() => {
+    if (!isBackendConfigured()) {
+      setStatusState('unconfigured');
+      setHealth(null);
+      return;
+    }
     fetchHealth()
-      .then(setHealth)
-      .catch(() => setHealth(null));
+      .then((data) => {
+        setHealth(data);
+        setStatusState('online');
+      })
+      .catch(() => {
+        setHealth(null);
+        setStatusState('unavailable');
+      });
   }, []);
 
   return (
@@ -80,21 +94,33 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
           <div className="hidden sm:flex items-center space-x-2 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
             <Server className="w-3.5 h-3.5 text-slate-400" />
             <span className="text-slate-400">PyMuPDF:</span>
-            <span className="font-mono text-cyan-400">
-              {health?.components.pdf_parser || 'Connecting...'}
+            <span className={`font-mono ${
+              statusState === 'online' ? 'text-cyan-400' : statusState === 'unconfigured' ? 'text-amber-400' : statusState === 'connecting' ? 'text-slate-400' : 'text-rose-400'
+            }`}>
+              {health?.components.pdf_parser || (statusState === 'unconfigured' ? 'Config Required' : statusState === 'connecting' ? 'Connecting...' : 'Unavailable')}
             </span>
           </div>
 
           <div className="flex items-center space-x-2 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
-            {health?.status === 'healthy' ? (
+            {statusState === 'online' ? (
               <>
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                 <span className="text-emerald-400 font-medium">Backend Online</span>
               </>
+            ) : statusState === 'unconfigured' ? (
+              <>
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-amber-400 font-medium">Configuration Required</span>
+              </>
+            ) : statusState === 'connecting' ? (
+              <>
+                <Server className="w-3.5 h-3.5 text-slate-400 animate-pulse" />
+                <span className="text-slate-400 font-medium">Connecting...</span>
+              </>
             ) : (
               <>
-                <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-amber-400 font-medium">Connecting</span>
+                <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
+                <span className="text-rose-400 font-medium">Backend Unavailable</span>
               </>
             )}
           </div>

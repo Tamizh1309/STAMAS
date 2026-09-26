@@ -4,7 +4,7 @@ import { Dashboard } from './components/Dashboard';
 import { TenderDetailView } from './components/TenderDetailView';
 import { CreateTenderModal } from './components/CreateTenderModal';
 import { BenchmarkDashboard } from './components/benchmark/BenchmarkDashboard';
-import { fetchTenders } from './services/api';
+import { fetchTenders, isBackendConfigured } from './services/api';
 import type { Tender } from './types';
 
 export function App() {
@@ -13,13 +13,26 @@ export function App() {
   const [tenders, setTenders] = useState<Tender[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(
+    !isBackendConfigured()
+      ? 'Backend API is not configured for this production deployment. Configure VITE_API_BASE_URL to connect STAMAS to the FastAPI backend.'
+      : null
+  );
 
   const loadTenders = async () => {
+    if (!isBackendConfigured()) {
+      setApiError('Backend API is not configured for this production deployment. Configure VITE_API_BASE_URL to connect STAMAS to the FastAPI backend.');
+      setTenders([]);
+      return;
+    }
     try {
       const data = await fetchTenders(searchQuery);
       setTenders(data);
-    } catch (err) {
+      setApiError(null);
+    } catch (err: any) {
       console.error('Failed to load tenders', err);
+      setApiError(err.message || 'Unable to reach the STAMAS backend API.');
+      setTenders([]);
     }
   };
 
@@ -52,6 +65,7 @@ export function App() {
             onCreateNew={() => setIsCreateModalOpen(true)}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
+            apiError={apiError}
           />
         )}
       </main>

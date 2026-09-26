@@ -1,7 +1,8 @@
 import React from 'react';
-import { FileText, FileCheck, Layers, Activity, PlusCircle, Search, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { FileText, FileCheck, Layers, Activity, PlusCircle, Search, ShieldCheck, CheckCircle2, AlertTriangle, AlertCircle } from 'lucide-react';
 import type { Tender } from '../types';
 import { TenderList } from './TenderList';
+import { isBackendConfigured, getApiBaseUrl } from '../services/api';
 
 interface DashboardProps {
   tenders: Tender[];
@@ -9,6 +10,7 @@ interface DashboardProps {
   onCreateNew: () => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
+  apiError?: string | null;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -17,14 +19,43 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onCreateNew,
   searchQuery,
   setSearchQuery,
+  apiError,
 }) => {
-  const totalTenders = tenders.length;
-  const processedTenders = tenders.filter((t) => t.status === 'PROCESSED').length;
-  const totalPages = tenders.reduce((acc, t) => acc + (t.page_count || 0), 0);
+  const isConfigured = isBackendConfigured();
+  const hasError = Boolean(apiError);
+
+  const totalTenders = (isConfigured && !hasError) ? tenders.length : 'N/A';
+  const processedTenders = (isConfigured && !hasError) ? tenders.filter((t) => t.status === 'PROCESSED').length : 'N/A';
+  const totalPages = (isConfigured && !hasError) ? tenders.reduce((acc, t) => acc + (t.page_count || 0), 0) : 'N/A';
 
   return (
     <div className="space-y-8 animate-fade-in">
       
+      {/* Backend Status Alert Banner */}
+      {!isConfigured ? (
+        <div className="bg-amber-950/40 border border-amber-500/30 rounded-2xl p-5 flex items-start space-x-4 text-amber-200 shadow-xl">
+          <AlertTriangle className="w-6 h-6 text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h4 className="text-sm font-bold text-amber-300">Backend API Not Configured for Production Host</h4>
+            <p className="text-xs text-amber-200/80 leading-relaxed">
+              The STAMAS frontend is running on static hosting without a configured FastAPI backend endpoint.
+              To connect this deployment to a live FastAPI engine, set the <code className="bg-amber-900/60 px-1.5 py-0.5 rounded font-mono text-amber-200">VITE_API_BASE_URL</code> environment variable (e.g., <code className="bg-amber-900/60 px-1.5 py-0.5 rounded font-mono text-amber-200">https://your-api-domain.com/api/v1</code>) during build.
+            </p>
+          </div>
+        </div>
+      ) : hasError ? (
+        <div className="bg-rose-950/40 border border-rose-500/30 rounded-2xl p-5 flex items-start space-x-4 text-rose-200 shadow-xl">
+          <AlertCircle className="w-6 h-6 text-rose-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h4 className="text-sm font-bold text-rose-300">FastAPI Backend API Unavailable</h4>
+            <p className="text-xs text-rose-200/80 leading-relaxed">
+              Unable to reach STAMAS API at <code className="bg-rose-900/60 px-1.5 py-0.5 rounded font-mono text-rose-200">{getApiBaseUrl() || '/api/v1'}</code>. Ensure the backend server is running and CORS allows origin <code className="bg-rose-900/60 px-1.5 py-0.5 rounded font-mono text-rose-200">{window.location.origin}</code>.
+            </p>
+            {apiError && <p className="text-[11px] font-mono text-rose-400 mt-1">Details: {apiError}</p>}
+          </div>
+        </div>
+      ) : null}
+
       {/* Hero Banner / Intro */}
       <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-8 shadow-2xl">
         <div className="absolute top-0 right-0 -mt-12 -mr-12 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -90,9 +121,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
           <div>
             <p className="text-xs text-slate-400 font-medium">Engine Status</p>
-            <h3 className="text-sm font-bold text-emerald-400 flex items-center space-x-1.5 mt-1">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Active V1 Engine</span>
+            <h3 className={`text-sm font-bold flex items-center space-x-1.5 mt-1 ${
+              isConfigured && !hasError ? 'text-emerald-400' : !isConfigured ? 'text-amber-400' : 'text-rose-400'
+            }`}>
+              {isConfigured && !hasError ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Active V1 Engine</span>
+                </>
+              ) : !isConfigured ? (
+                <>
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>Config Required</span>
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Backend Offline</span>
+                </>
+              )}
             </h3>
           </div>
         </div>
