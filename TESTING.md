@@ -25,19 +25,19 @@ The STAMAS testing suite implements a 5-layer testing pyramid with 55 automated 
 
 | Test Module | Path | Purpose |
 | :--- | :--- | :--- |
-| **Compliance Rules** | [`backend/tests/test_compliance_rules.py`](file:///f:/SIH/backend/tests/test_compliance_rules.py) | Unit tests for numeric min/max/range, date, certification rules. |
-| **Decision Engine** | [`backend/tests/test_decision_engine.py`](file:///f:/SIH/backend/tests/test_decision_engine.py) | PASS/FAIL/REVIEW decision state matrix verification. |
-| **Evidence Matching** | [`backend/tests/test_evidence_matching.py`](file:///f:/SIH/backend/tests/test_evidence_matching.py) | Keyword, semantic, and hybrid evidence retrieval matching. |
-| **Health Probes** | [`backend/tests/test_health.py`](file:///f:/SIH/backend/tests/test_health.py) | Liveness and readiness endpoints. |
-| **Officer Review** | [`backend/tests/test_officer_review.py`](file:///f:/SIH/backend/tests/test_officer_review.py) | Decision confirmation, manual override, finalization, audit. |
-| **PDF Extraction** | [`backend/tests/test_pdf_extraction.py`](file:///f:/SIH/backend/tests/test_pdf_extraction.py) | Document text parsing, page extraction, OCR fallback. |
-| **Performance Benchmark** | [`backend/tests/test_performance_benchmark.py`](file:///f:/SIH/backend/tests/test_performance_benchmark.py) | Live evaluator execution and PDF rendering latency checks. |
-| **AI + RAG Intelligence** | [`backend/tests/test_rag_intelligence.py`](file:///f:/SIH/backend/tests/test_rag_intelligence.py) | Chunking, vector retrieval, grounded answers, fallback mode. |
-| **Reports & Audit** | [`backend/tests/test_reports_audit.py`](file:///f:/SIH/backend/tests/test_reports_audit.py) | Report data aggregation, PDF/CSV rendering, audit history. |
-| **Requirements** | [`backend/tests/test_requirements.py`](file:///f:/SIH/backend/tests/test_requirements.py) | Requirement extraction, threshold detection, mandatory flags. |
-| **Security & Isolation** | [`backend/tests/test_security_isolation.py`](file:///f:/SIH/backend/tests/test_security_isolation.py) | Cross-tender data isolation, path traversal, prompt injection. |
-| **Tenders** | [`backend/tests/test_tenders.py`](file:///f:/SIH/backend/tests/test_tenders.py) | Tender CRUD operations and page processing. |
-| **E2E Pipeline** | [`backend/tests/test_e2e_pipeline.py`](file:///f:/SIH/backend/tests/test_e2e_pipeline.py) | Multi-phase end-to-end integration pipeline verification. |
+| **Compliance Rules** | [`test_compliance_rules.py`](backend/tests/test_compliance_rules.py) | Unit tests for numeric min/max/range, date, certification rules. |
+| **Decision Engine** | [`test_decision_engine.py`](backend/tests/test_decision_engine.py) | PASS/FAIL/REVIEW decision state matrix verification. |
+| **Evidence Matching** | [`test_evidence_matching.py`](backend/tests/test_evidence_matching.py) | Keyword, semantic, and hybrid evidence retrieval matching. |
+| **Health Probes** | [`test_health.py`](backend/tests/test_health.py) | Liveness and readiness endpoints. |
+| **Officer Review** | [`test_officer_review.py`](backend/tests/test_officer_review.py) | Decision confirmation, manual override, finalization, audit. |
+| **PDF Extraction** | [`test_pdf_extraction.py`](backend/tests/test_pdf_extraction.py) | Document text parsing, page extraction, OCR fallback. |
+| **Performance Benchmark** | [`test_performance_benchmark.py`](backend/tests/test_performance_benchmark.py) | Live evaluator execution and PDF rendering latency checks. |
+| **AI + RAG Intelligence** | [`test_rag_intelligence.py`](backend/tests/test_rag_intelligence.py) | Chunking, vector retrieval, grounded answers, fallback mode. |
+| **Reports & Audit** | [`test_reports_audit.py`](backend/tests/test_reports_audit.py) | Report data aggregation, PDF/CSV rendering, audit history. |
+| **Requirements** | [`test_requirements.py`](backend/tests/test_requirements.py) | Requirement extraction, threshold detection, mandatory flags. |
+| **Security & Isolation** | [`test_security_isolation.py`](backend/tests/test_security_isolation.py) | Cross-tender data isolation, path traversal, prompt injection. |
+| **Tenders** | [`test_tenders.py`](backend/tests/test_tenders.py) | Tender CRUD operations and page processing. |
+| **E2E Pipeline** | [`test_e2e_pipeline.py`](backend/tests/test_e2e_pipeline.py) | Multi-phase end-to-end integration pipeline verification. |
 
 ---
 

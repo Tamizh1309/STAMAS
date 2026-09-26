@@ -60,7 +60,7 @@ STAMAS is an end-to-end, AI-assisted compliance verification platform designed f
 
 ---
 
-## 12-Phase System Feature Matrix
+## Complete System Feature Matrix
 
 | Phase | Subsystem | Key Capabilities |
 | :--- | :--- | :--- |
@@ -76,6 +76,9 @@ STAMAS is an end-to-end, AI-assisted compliance verification platform designed f
 | **Phase 10** | Reports & Audit | Exportable PDF compliance reports, CSV structured data, audit logs |
 | **Phase 11** | Benchmarking & Evaluation | Empirical Ground Truth benchmark suite, confusion matrix, latency stats |
 | **Phase 12** | Deployment & Readiness | Production Docker containerization, 1-command startup, health probes |
+| **Phase 13** | Integration & Hardening | Full end-to-end data flow validation, decision immutability integrity |
+| **Phase 14** | Final System Validation | Master AC-01 to AC-18 validation, AI failure degradation mode |
+| **Phase 15** | Submission Hardening | Repository audit, secret scan, local link cleanup, submission readiness |
 
 ---
 
@@ -161,7 +164,12 @@ Evaluated dynamically on ground truth dataset (`backend/benchmark/ground_truth.j
 
 ## Documentation Index
 
-- [`DEPLOYMENT.md`](file:///f:/SIH/DEPLOYMENT.md): Detailed installation & production deployment guide
-- [`DEPLOYMENT_CHECKLIST.md`](file:///f:/SIH/DEPLOYMENT_CHECKLIST.md): Readiness checklist
-- [`TROUBLESHOOTING.md`](file:///f:/SIH/TROUBLESHOOTING.md): Problem diagnosis & error resolution
-- [`ENVIRONMENT.md`](file:///f:/SIH/ENVIRONMENT.md): Development, Demo, and Production configuration matrix
+- [`ARCHITECTURE.md`](ARCHITECTURE.md): System architecture, core data flow, decision integrity, and security model
+- [`DEMO_GUIDE.md`](DEMO_GUIDE.md): Step-by-step SIH demonstration guide (5–8 min walkthrough)
+- [`TESTING.md`](TESTING.md): Testing pyramid, test module reference, and benchmark methodology
+- [`DEPLOYMENT.md`](DEPLOYMENT.md): Detailed installation & production deployment guide
+- [`DEPLOYMENT_CHECKLIST.md`](DEPLOYMENT_CHECKLIST.md): Readiness checklist
+- [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md): Problem diagnosis & error resolution
+- [`ENVIRONMENT.md`](ENVIRONMENT.md): Development, Demo, and Production configuration matrix
+- [`LIMITATIONS.md`](LIMITATIONS.md): Factual system limitations and disclosures
+- [`FINAL_SUBMISSION_READINESS.md`](FINAL_SUBMISSION_READINESS.md): Master submission readiness document
