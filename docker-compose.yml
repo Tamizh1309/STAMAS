@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: stamas_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=production
+      - DATABASE_URL=sqlite:////app/storage/stamas.db
+      - UPLOAD_DIR=/app/storage/uploads
+      - PROCESSED_DIR=/app/storage/processed
+      - REPORT_DIR=/app/storage/reports
+      - TEMP_DIR=/app/storage/temp
+      - CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:3000"]
+      - AI_PROVIDER=GEMINI
+      - EMBEDDING_PROVIDER=KEYWORD
+    volumes:
+      - stamas_storage:/app/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: stamas_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000/api/v1
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  stamas_storage:
+    driver: local
